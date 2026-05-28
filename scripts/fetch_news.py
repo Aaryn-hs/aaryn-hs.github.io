@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Daily news fetcher - RSS based
+Daily news fetcher - Chinese RSS sources
 Output: docs/daily-news/YYYY-MM-DD.md
 """
 
@@ -8,6 +8,7 @@ import os
 import urllib.request
 import urllib.error
 import xml.etree.ElementTree as ET
+import json
 import ssl
 from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
@@ -36,15 +37,18 @@ def strip_html(html):
     return s.get_data()
 
 
-def fetch(url):
+def fetch(url, headers_extra=None):
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
-    req = urllib.request.Request(url, headers={
+    headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                       "AppleWebKit/537.36 (KHTML, like Gecko) "
                       "Chrome/120.0.0.0 Safari/537.36"
-    })
+    }
+    if headers_extra:
+        headers.update(headers_extra)
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
             return resp.read()
@@ -58,24 +62,18 @@ def parse_rss(data, limit=10):
         return []
     try:
         root = ET.fromstring(data)
-        # Handle RSS and Atom
         items = []
         for item in root.iter("item"):
             title = item.findtext("title", "")
-            link = item.findtext("link", "")
-            desc = item.findtext("description", "")
-            desc = strip_html(desc)[:100] if desc else ""
             if title:
-                items.append("- " + title)
+                items.append("- " + title.strip())
             if len(items) >= limit:
                 break
         if not items:
             for entry in root.iter("{http://www.w3.org/2005/Atom}entry"):
                 title = entry.findtext("{http://www.w3.org/2005/Atom}title", "")
-                link_el = entry.find("{http://www.w3.org/2005/Atom}link")
-                link = link_el.attrib.get("href", "") if link_el is not None else ""
                 if title:
-                    items.append("- " + title)
+                    items.append("- " + title.strip())
                 if len(items) >= limit:
                     break
         return items
@@ -85,38 +83,40 @@ def parse_rss(data, limit=10):
 
 
 SOURCES = [
+    # Use RSS Bridge as relay for Chinese sources
     {
-        "name": "Hacker News",
-        "url": "https://hnrss.org/frontpage?count=10",
+        "name": "36氪",
+        "url": "https://feedx.net/rss/36kr.xml",
         "type": "rss"
     },
     {
-        "name": "BBC News",
-        "url": "https://feeds.bbci.co.uk/news/rss.xml",
+        "name": "知乎每日精选",
+        "url": "https://feedx.net/rss/zhihu_daily.xml",
         "type": "rss"
     },
     {
-        "name": "Reuters",
-        "url": "https://www.rss-bridge.org/bridge01/?action=display&bridge=FilterBridge&url=https%3A%2F%2Fwww.reuters.com&content_filter=&content_filter_type=text&title_filter=&title_filter_type=text&inverse=on&case_insensitive=on&fix_encoding=on&format=Atom",
+        "name": "华尔街见闻",
+        "url": "https://feedx.net/rss/wallstreetcn.xml",
         "type": "rss"
-    }
+    },
 ]
 
 
 def generate_news():
     today = datetime.now(CST).strftime("%Y-%m-%d")
-    weekday_cn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekday_cn = ["一", "二", "三", "四", "五", "六", "日"]
     wd = weekday_cn[datetime.now(CST).weekday()]
+    cn_date = "%s年%s月%s日" % (today.split("-")[0], today.split("-")[1], today.split("-")[2])
 
     lines = []
     lines.append("---")
     lines.append("layout: default")
-    lines.append("title: Daily News - " + today)
+    lines.append("title: 每日新闻 - " + today)
     lines.append("nav_order: 0")
     lines.append("parent: Daily News")
     lines.append("---")
     lines.append("")
-    lines.append("# Daily News | " + today + " " + wd)
+    lines.append("# 📰 每日新闻 | " + cn_date + " 周" + wd)
     lines.append("")
 
     for source in SOURCES:
@@ -129,11 +129,11 @@ def generate_news():
         if items:
             lines.extend(items)
         else:
-            lines.append("> No data available")
+            lines.append("> 暂无数据")
         lines.append("")
 
     lines.append("---")
-    lines.append("*Auto-generated.*")
+    lines.append("*本内容由自动化脚本生成，仅供参考*")
     lines.append("")
 
     content = "\n".join(lines)
@@ -144,9 +144,9 @@ def generate_news():
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
-    print("News saved: " + filepath)
+    print("新闻已保存: " + filepath)
 
 
 if __name__ == "__main__":
-    print("Fetching daily news...")
+    print("开始抓取每日新闻...")
     generate_news()
