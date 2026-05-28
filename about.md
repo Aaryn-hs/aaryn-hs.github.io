@@ -1,16 +1,14 @@
----
+﻿---
 layout: default
-title: 关于
+title: 鍏充簬
 nav_order: 99
 permalink: /about
 ---
 
-# 关于
+# 鍏充簬
 
-## 关于我
+## 鍏充簬鎴?
+鑰佸彾锛岀▼搴忓憳锛?991骞寸敓銆?
+## 鍏充簬杩欎釜鍗氬
 
-老叶，程序员，1991年生。
-
-## 关于这个博客
-
-基于 GitHub Pages + Just the Docs 搭建。
+鍩轰簬 GitHub Pages + Just the Docs 鎼缓銆?
