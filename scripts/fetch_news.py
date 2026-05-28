@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-姣忔棩鏂伴椈鎶撳彇鑴氭湰
-杩愯鏂瑰紡锛歱ython3 fetch_news.py
-杈撳嚭锛氱敓鎴?docs/姣忔棩鏂伴椈/YYYY-MM-DD.md 鏂囦欢
+Daily news fetcher
+Output: docs/daily-news/YYYY-MM-DD.md
 """
 
 import os
@@ -14,29 +13,23 @@ from datetime import datetime, timezone, timedelta
 
 CST = timezone(timedelta(hours=8))
 
-# 鏂伴椈婧?SOURCES = [
+SOURCES = [
     {
-        "name": "鐭ヤ箮鐑",
+        "name": "Zhihu Hot",
         "url": "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10",
         "headers": {"User-Agent": "Mozilla/5.0"},
         "parser": "zhihu"
     },
     {
-        "name": "寰崥鐑悳",
+        "name": "Weibo Hot",
         "url": "https://weibo.com/ajax/side/hotSearch",
         "headers": {"User-Agent": "Mozilla/5.0"},
         "parser": "weibo"
-    },
-    {
-        "name": "36姘揩璁?,
-        "url": "https://36kr.com/newsflashes",
-        "headers": {"User-Agent": "Mozilla/5.0"},
-        "parser": "36kr"
     }
 ]
 
+
 def fetch_json(url, headers=None):
-    """鑾峰彇 JSON 鏁版嵁"""
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
@@ -47,8 +40,8 @@ def fetch_json(url, headers=None):
     except Exception as e:
         return None
 
+
 def parse_zhihu(text):
-    """瑙ｆ瀽鐭ヤ箮鐑"""
     if not text:
         return []
     try:
@@ -57,16 +50,15 @@ def parse_zhihu(text):
         for item in data.get("data", [])[:10]:
             target = item.get("target", {})
             title = target.get("title", "")
-            url = target.get("url", "")
-           鐑害 = item.get("detail_text", "")
+            hot = item.get("detail_text", "")
             if title:
-                items.append(f"- [{title}](https://www.zhihu.com/question/{target.get('id', '')}) ({鐑害})")
+                items.append("- " + title + " (" + hot + ")")
         return items
     except:
         return []
 
+
 def parse_weibo(text):
-    """瑙ｆ瀽寰崥鐑悳"""
     if not text:
         return []
     try:
@@ -74,37 +66,32 @@ def parse_weibo(text):
         items = []
         for item in data.get("data", {}).get("realtime", [])[:15]:
             title = item.get("word", "")
-            鐑害 = item.get("num", "")
+            hot = item.get("num", "")
             if title:
-                items.append(f"- {title} (鐑害: {鐑害})")
+                items.append("- " + title + " (hot: " + str(hot) + ")")
         return items
     except:
         return []
 
-def parse_36kr(text):
-    """瑙ｆ瀽 36姘?""
-    # 36姘渶瑕佹覆鏌擄紝璺宠繃 HTML 瑙ｆ瀽
-    return []
 
 def generate_news():
-    """鐢熸垚褰撴棩鏂伴椈"""
     today = datetime.now(CST).strftime("%Y-%m-%d")
-    weekday_cn = ["涓€", "浜?, "涓?, "鍥?, "浜?, "鍏?, "鏃?]
+    weekday_cn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     wd = weekday_cn[datetime.now(CST).weekday()]
 
-    content = f"""---
-layout: default
-title: 姣忔棩鏂伴椈 - {today}
-nav_order: 1
-parent: 姣忔棩鏂伴椈
----
-
-# 馃摪 姣忔棩鏂伴椈 | {today} 鍛▄wd}
-
-"""
+    lines = []
+    lines.append("---")
+    lines.append("layout: default")
+    lines.append("title: Daily News - " + today)
+    lines.append("nav_order: 1")
+    lines.append("parent: Daily News")
+    lines.append("---")
+    lines.append("")
+    lines.append("# Daily News | " + today + " " + wd)
+    lines.append("")
 
     for source in SOURCES:
-        print(f"  Fetching {source['name']}...")
+        print("  Fetching " + source["name"] + "...")
         text = fetch_json(source["url"], source["headers"])
 
         if source["parser"] == "zhihu":
@@ -114,26 +101,30 @@ parent: 姣忔棩鏂伴椈
         else:
             items = []
 
-        content += f"## {source['name']}\n\n"
+        lines.append("## " + source["name"])
+        lines.append("")
         if items:
-            content += "\n".join(items) + "\n\n"
+            lines.extend(items)
         else:
-            content += "> 鑾峰彇澶辫触鎴栨殏鏃犳暟鎹甛n\n"
+            lines.append("> No data available")
+        lines.append("")
 
-    content += """\n---
-*鏈唴瀹圭敱鑷姩鍖栬剼鏈敓鎴愶紝浠呬緵鍙傝€冦€?
-"""
+    lines.append("---")
+    lines.append("*Auto-generated.*")
+    lines.append("")
 
-    # 鍐欏叆鏂囦欢
-    news_dir = "docs/姣忔棩鏂伴椈"
+    content = "\n".join(lines)
+
+    news_dir = "docs/daily-news"
     os.makedirs(news_dir, exist_ok=True)
-    filepath = os.path.join(news_dir, f"{today}.md")
+    filepath = os.path.join(news_dir, today + ".md")
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
-    print(f"鉁?鏂伴椈宸茬敓鎴? {filepath}")
+    print("News saved: " + filepath)
     return filepath, content
 
+
 if __name__ == "__main__":
-    print("馃摪 寮€濮嬫姄鍙栨瘡鏃ユ柊闂?..")
+    print("Fetching daily news...")
     generate_news()
