@@ -1,6 +1,6 @@
 ---
 layout: default
-title: 第一篇 - Hello World
+title: Hello World
 nav_order: 1
 parent: 随笔
 ---
@@ -19,6 +19,4 @@ parent: 随笔
 
 ## 关于这个博客
 
-- 记录技术笔记和踩坑经历
-- 分享一些想法和观点
-- 当作自己的数字花园
+记录技术笔记和踩坑经历，分享想法和观点，当作自己的数字花园。
