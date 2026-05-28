@@ -33,3 +33,7 @@ footer_content: "Copyright &copy; 2026 老叶. Distributed by an <a href=\"https
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-feed
+
+# GitHub Metadata (optional, for better repo integration)
+repository: Aaryn-hs/aaryn-hs.github.io
