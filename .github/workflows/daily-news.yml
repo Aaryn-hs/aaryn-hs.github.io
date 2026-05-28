@@ -1,0 +1,28 @@
+name: 姣忔棩鏂伴椈
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 姣忓ぉ UTC 0:00 = 鍖椾含鏃堕棿 8:00
+  workflow_dispatch:      # 涔熸敮鎸佹墜鍔ㄨЕ鍙?
+jobs:
+  fetch-news:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 妫€鍑轰粨搴?        uses: actions/checkout@v4
+
+      - name: 璁剧疆 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: 杩愯鏂伴椈鎶撳彇鑴氭湰
+        run: python3 scripts/fetch_news.py
+
+      - name: 鎻愪氦骞舵帹閫?        run: |
+          git config user.name "news-bot"
+          git config user.email "bot@aaryn-hs.github.io"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "馃摪 姣忔棩鏂伴椈 $(date +'%Y-%m-%d')"
+          git push
